@@ -65,11 +65,11 @@ async handleRollbackImport(@Payload() data: { importId: number }) {
 }
 ```
 
-El service delega en `ImportService` (`common/import/import.service.ts`):
+El service delega en `ImportBatchService` (`common/import/import.service.ts`):
 
 ```ts
 async importBatch(data: ImportBatchDto) {
-  return this.importService.importBatch(
+  return this.importBatchService.importBatch(
     this.repo,
     data.data,
     data.isLastBatch,
@@ -148,6 +148,9 @@ Respuesta exitosa:
 - **Archivo original a FTP**: siempre se sube como respaldo antes de parsear
 - **Lock secuencial por config name**: `runSequentially()` garantiza que 2 imports con el mismo `name` NO se ejecuten en paralelo
 - **Deduplicación por SHA256**: antes de procesar, verifica si ya existe un COMPLETED con el mismo `target` + `fileHash`
+- **startColumn**: `mapRowByConfig` aplica slice antes del mapeo (útil para archivos con columnas basura iniciales)
+- **Auth guards**: todos los endpoints de import requieren `@UseGuards(AuthGuard)`
+- **SQL injection protection**: `validateSqlIdentifier()` valida nombres de tablas/schemas con regex
 
 ## stack.key
 
@@ -161,7 +164,7 @@ No se usa `target` ni `routeMap`. El Global deriva el patrón dinámicamente des
 ## Solución de problemas
 
 **Error: "(0 , csv_parser_1.default) is not a function"**
-- Usar `import * as csv from 'csv-parser'` en vez de `import csv from 'csv-parser'`
+- Usar `import csv from 'csv-parser'` (default import) con `esModuleInterop: true` en tsconfig
 
 **Error: "Microservice Unavailable"**
 - Verificar que el microservicio destino esté corriendo: `docker compose ps`
